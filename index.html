@@ -3,25 +3,47 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Camera Length Measurement</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Area Measurement</title>
 </head>
 <body>
-    <div class="container">
-        <h1>Camera Length Measurement</h1>
-        <p>Place a reference object of known size (e.g., a ruler) in the frame.</p>
-        <video id="camera" autoplay playsinline></video>
-        <canvas id="canvas" style="display: none;"></canvas>
-        <br>
-        <label for="referenceSize">Reference Object Size (cm):</label>
-        <input type="number" id="referenceSize" placeholder="Enter size in cm">
-        <br><br>
-        <button id="startButton">Start Measurement</button>
-        <br><br>
-        <div id="result"></div>
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
-    <script src="script.js"></script>
+    <h1>Measure Area Through Camera</h1>
+    <video id="video" width="640" height="480" autoplay></video>
+    <button id="capture">Capture Image</button>
+    <canvas id="canvas" width="640" height="480" style="display:none;"></canvas>
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureButton = document.getElementById('capture');
+
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then((stream) => {
+                video.srcObject = stream;
+            })
+            .catch((err) => {
+                console.error("Error accessing the camera: ", err);
+            });
+
+        captureButton.addEventListener('click', () => {
+            const context = canvas.getContext('2d');
+            context.drawImage(video, 0, 0, 640, 480);
+            const imageData = canvas.toDataURL('image/png');
+            // Send imageData to the backend for processing
+            fetch('/process-image', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ image: imageData }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Area:', data.area);
+                alert(`Measured Area: ${data.area} square units`);
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        });
+    </script>
 </body>
 </html>
